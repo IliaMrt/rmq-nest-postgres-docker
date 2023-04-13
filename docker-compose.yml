@@ -1,0 +1,104 @@
+version: '3.0'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - network
+
+  gateway:
+    container_name: gateway
+    build:
+      context: gateway
+    env_file:
+      - gateway/.development.env
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    ports:
+      - 8000:8000
+      - 9229:9229
+    networks:
+      - network
+    command: npm run listen
+
+    restart: always
+
+  profiles:
+    container_name: profiles
+    build:
+      context: profiles
+    env_file:
+      - profiles/.development.env
+    volumes:
+      - ./profiles:/app
+      - /app/node_modules
+    ports:
+      - 8001:8000
+      - 9230:9229
+    networks:
+      - network
+    command: npm run start:dev
+
+    restart: always
+
+  users:
+    container_name: users
+    build:
+      context: users
+    env_file:
+      - users/.development.env
+    volumes:
+      - ./users:/app
+      - /app/node_modules
+    ports:
+      - 8002:8000
+      - 9231:9229
+    networks:
+      - network
+    command: npm run start:dev
+
+    restart: always
+
+  postgres-users:
+    container_name: postgres-users
+    image: postgres:12
+    env_file:
+      - ./users/.development.env
+    environment:
+      PG_DATA: /var/lib/postgresql/12/main
+    ports:
+      - 5432
+    volumes:
+      - pgdata-users:/var/lib/postgresql/12/main
+    networks:
+      - network
+    restart: always
+
+  postgres-profiles:
+    container_name: postgres-profiles
+    image: postgres:12
+    env_file:
+      - ./profiles/.development.env
+    environment:
+      PG_DATA: /var/lib/postgresql/12/main
+    ports:
+      - 5432
+    volumes:
+      - pgdata-profiles:/var/lib/postgresql/12/main
+    networks:
+      - network
+    restart: always
+
+networks:
+    # Declare our private network.  We must declare one for the magic
+    # Dockerfile DNS to work, but otherwise its default settings are fine.
+  network: {}
+
+volumes:
+  pgdata-users:
+  pgdata-profiles:
